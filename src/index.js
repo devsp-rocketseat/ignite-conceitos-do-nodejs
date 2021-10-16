@@ -15,7 +15,7 @@ function checksExistsUserAccount(request, response, next) {
 
   const user = users.find(user => user.username === username)
 
-  if (user) {
+  if (!user) {
     return response
       .status(404)
       .json({ error: 'User inexistente' })
@@ -83,19 +83,18 @@ app.put('/todos/:id', checksExistsUserAccount, (request, response) => {
 
   const userIndex = users.findIndex(user => user.username === username)
 
-  const todosUpdated = users[userIndex].todos.map(todo => {
-    if (todo.id !== request.params.id) return todo
+  const todoIndex = users[userIndex].todos.findIndex(todo => todo.id === request.params.id)
+  if (todoIndex < 0) return response.status(404).json({ error: 'todo não encontrado' })
 
-    return {
-      ...todo,
-      title,
-      deadline: new Date(deadline),
-    }
-  })
+  const todoUpdated = {
+    ...users[userIndex].todos[todoIndex],
+    title,
+    deadline: new Date(deadline),
+  }
 
-  users[userIndex].todos = todosUpdated
+  users[userIndex].todos[todoIndex] = todoUpdated
 
-  response.status(200).json()
+  response.status(200).json(todoUpdated)
 })
 
 app.patch('/todos/:id/done', checksExistsUserAccount, (request, response) => {
@@ -103,18 +102,17 @@ app.patch('/todos/:id/done', checksExistsUserAccount, (request, response) => {
 
   const userIndex = users.findIndex(user => user.username === username)
 
-  const todosUpdated = users[userIndex].todos.map(todo => {
-    if (todo.id !== request.params.id) return todo
+  const todoIndex = users[userIndex].todos.findIndex(todo => todo.id === request.params.id)
+  if (todoIndex < 0) return response.status(404).json({ error: 'erro' })
 
-    return {
-      ...todo,
-      done: !todo.done
-    }
-  })
+  const todoUpdated = {
+    ...users[userIndex].todos[todoIndex],
+    done: !users[userIndex].todos[todoIndex].done
+  }
 
-  users[userIndex].todos = todosUpdated
+  users[userIndex].todos[todoIndex] = todoUpdated
 
-  response.status(200).json()
+  response.status(200).json(todoUpdated)
 })
 
 app.delete('/todos/:id', checksExistsUserAccount, (request, response) => {
@@ -122,10 +120,13 @@ app.delete('/todos/:id', checksExistsUserAccount, (request, response) => {
 
   const userIndex = users.findIndex(user => user.username === username)
 
+  const todoIndex = users[userIndex].todos.findIndex(todo => todo.id === request.params.id)
+  if (todoIndex < 0) return response.status(404).json({ error: 'erro' })
+
   const todosUpdated = users[userIndex].todos.filter(todo => todo.id !== request.params.id)
   users[userIndex].todos = todosUpdated
 
-  response.status(200).json()
+  response.status(204).send()
 })
 
 module.exports = app
